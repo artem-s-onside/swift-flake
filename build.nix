@@ -14,6 +14,11 @@ let
   llvm = llvmPackages_17;
   clang = llvm.clang;
 
+  fhsEnv = buildFHSEnv {
+    name = "swift-env";
+    multiPkgs = pkgs: (with pkgs; [ stdenv.cc.cc stdenv.cc.libc stdenv.cc.libc.dev ]);
+  };
+
   wrapperParams = rec {
     inherit bintools;
 
@@ -57,76 +62,62 @@ let
     swiftStaticModuleSubdir = lib.replaceStrings [ "/swift/" ] [ "/swift_static/" ] swiftModuleSubdir;
   };
 
-  swift = stdenv.mkDerivation (wrapperParams // {
-    inherit src version;
-
-    name = "swift";
-
-    buildInputs = [ makeWrapper ];
-
-    phases = [ "installPhase" "checkPhase" ];
-
-    installPhase = ''
-      mkdir -p $out/nix-support
-
-      tar --strip-components=2 -xf $src -C $out
-
-      rpath=$rpath''${rpath:+:}$out/lib
-      rpath=$rpath''${rpath:+:}$out/lib/swift/host
-      rpath=$rpath''${rpath:+:}$out/lib/swift/linux
-      rpath=$rpath''${rpath:+:}${stdenv.cc.cc.lib}/lib
-      rpath=$rpath''${rpath:+:}${stdenv.cc.cc}/lib
-      rpath=$rpath''${rpath:+:}${sqlite.out}/lib
-      rpath=$rpath''${rpath:+:}${ncurses}/lib
-      rpath=$rpath''${rpath:+:}${libuuid.lib}/lib
-      rpath=$rpath''${rpath:+:}${zlib}/lib
-      rpath=$rpath''${rpath:+:}${curl.out}/lib
-      rpath=$rpath''${rpath:+:}${libxml2.out}/lib
-      rpath=$rpath''${rpath:+:}${python39.out}/lib
-      rpath=$rpath''${rpath:+:}${libedit}/lib
-
-      # set all the dynamic linkers
-      find $out/bin -type f -perm -0100 \
-          -exec patchelf --interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
-          --set-rpath "$rpath" {} \;
-
-      find $out/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
-
-      rm $out/bin/swift
-      swiftDriver="$out/bin/swift-frontend" \
-        prog=$out/bin/swift \
-        substituteAll '${./build/wrapper.sh}' $out/bin/swift
-      chmod a+x $out/bin/swift
-
-      substituteAll ${./build/setup-hook.sh} $out/nix-support/setup-hook
-    '';
-
-    doCheck = true;
-    checkPhase = ''
-      $out/bin/swift --version
-    '';
-  });
-  fhsEnv = buildFHSEnv {
-    name = "swift-env";
-    targetPkgs = pkgs: (with pkgs; [ clang ]);
-    multiPkgs = pkgs: (with pkgs; [ stdenv.cc.cc stdenv.cc.libc stdenv.cc.libc.dev ]);
-  };
 in
-stdenv.mkDerivation {
-  inherit version;
+stdenv.mkDerivation (wrapperParams // {
+  inherit src version;
 
   name = "swift";
 
-  phases = [ "installPhase" ];
+  buildInputs = [ makeWrapper ];
+
+  phases = [ "installPhase" "checkPhase" ];
 
   installPhase = ''
-    mkdir -p $out/bin
+    mkdir -p $out/nix-support
 
-    cat <<EOF > $out/bin/swift
+    tar --strip-components=2 -xf $src -C $out
+
+    rm -rf $out/lib/clang
+    ln -s ${libclang.lib}/lib/clang $out/lib/clang
+
+    rpath=$rpath''${rpath:+:}$out/lib
+    rpath=$rpath''${rpath:+:}$out/lib/swift/host
+    rpath=$rpath''${rpath:+:}$out/lib/swift/linux
+    rpath=$rpath''${rpath:+:}${stdenv.cc.cc.lib}/lib
+    rpath=$rpath''${rpath:+:}${stdenv.cc.cc}/lib
+    rpath=$rpath''${rpath:+:}${sqlite.out}/lib
+    rpath=$rpath''${rpath:+:}${ncurses}/lib
+    rpath=$rpath''${rpath:+:}${libuuid.lib}/lib
+    rpath=$rpath''${rpath:+:}${zlib}/lib
+    rpath=$rpath''${rpath:+:}${curl.out}/lib
+    rpath=$rpath''${rpath:+:}${libxml2.out}/lib
+    rpath=$rpath''${rpath:+:}${python39.out}/lib
+    rpath=$rpath''${rpath:+:}${libedit}/lib
+
+    # set all the dynamic linkers
+    find $out/bin -type f -perm -0100 \
+      -exec patchelf --interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
+      --set-rpath "$rpath" {} \;
+
+    find $out/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
+
+    rm $out/bin/swift
+    swiftDriver="$out/bin/swift-frontend" \
+      prog=$out/bin/swift \
+      substituteAll '${./build/wrapper.sh}' $out/bin/.swift-wrapper
+
+    cat > $out/bin/swift <<-EOF
     #!${runtimeShell}
-    ${fhsEnv}/bin/swift-env ${swift}/bin/swift "\$@"
+    ${fhsEnv}/bin/swift-env $out/bin/.swift-wrapper "\$@"
     EOF
 
-    chmod +x $out/bin/swift
+    chmod +x $out/bin/.swift-wrapper $out/bin/swift
+
+    substituteAll ${./build/setup-hook.sh} $out/nix-support/setup-hook
   '';
-}
+
+  doCheck = true;
+  checkPhase = ''
+    $out/bin/swift --version
+  '';
+})
