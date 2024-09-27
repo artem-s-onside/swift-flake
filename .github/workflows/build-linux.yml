@@ -1,0 +1,46 @@
+# This workflow will build a Swift project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-swift
+
+name: Build on linux
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    timeout-minutes: 20
+    runs-on: nixos
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        repository: tawasal/swift-flake
+        github-server-url: ssh://git@github.tawasal.ae
+        submodules: recursive
+        ssh-key: ${{ secrets.SSH_KEY }}
+        ssh-strict: false
+        ssh-known-hosts: github.tawasal.ae ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBLMzy4gjE/XR9GAajtoCO9+mJve5En5Ht4P1OJb/5pNVhbJjk0Cb3g1rGVg1vhJPud8L53MdLtE61q5nik4DHes=
+
+    - name: Prepare secrets
+      env:
+        PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+      run: |
+        mkdir ${{ github.workspace }}/.secrets
+        chmod 0700 ${{ github.workspace }}/.secrets
+        echo "$PRIVATE_KEY" > ${{ github.workspace }}/.secrets/ssh_key
+        chmod 0600 ${{ github.workspace }}/.secrets/ssh_key
+        cat > ssh-git.sh << EOF
+        ssh -i ${{ github.workspace }}/.secrets/ssh_key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "\$@"
+        EOF
+        chmod +x ssh-git.sh
+
+    - name: Build on mac arm 64
+      env:
+        GIT_SSH: ${{ github.workspace }}/ssh-git.sh
+      run: |
+        nix build -L .#swift
+
+    - name: Cleanup secrets  
+      if: ${{ always() }}
+      run: rm -rf ${{ github.workspace }}/.secrets
+      
