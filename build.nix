@@ -92,15 +92,11 @@ let
 
       find $out/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
 
-      export swiftDriver="$out/bin/swift-frontend"
-
-      # Replace specific binaries with wrappers.
-      for executable in swift; do
-        export prog=$out/bin/$executable
-        rm $out/bin/$executable
-        substituteAll '${./build/wrapper.sh}' $out/bin/$executable
-        chmod a+x $out/bin/$executable
-      done
+      rm $out/bin/swift
+      swiftDriver="$out/bin/swift-frontend" \
+        prog=$out/bin/swift \
+        substituteAll '${./build/wrapper.sh}' $out/bin/swift
+      chmod a+x $out/bin/swift
 
       substituteAll ${./build/setup-hook.sh} $out/nix-support/setup-hook
     '';
