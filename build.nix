@@ -10,7 +10,54 @@ let
     url = "https://download.swift.org/swift-${version}-release/ubi9/swift-${version}-RELEASE/swift-${version}-RELEASE-ubi9.tar.gz";
     hash = "sha256-MQbDGfL+BgaI8tW4LNRPp5WjivFqIhfPX7vyfjA9mC4=";
   };
-  swift = stdenv.mkDerivation {
+
+  llvm = llvmPackages_17;
+  clang = llvm.clang;
+
+  wrapperParams = rec {
+    inherit bintools;
+
+    default_cc_wrapper = clang;
+    coreutils_bin = lib.getBin coreutils;
+    gnugrep_bin = gnugrep;
+    suffixSalt = lib.replaceStrings [ "-" "." ] [ "_" "_" ] targetPlatform.config;
+    use_response_file_by_default = 1;
+
+    swiftOs =
+      if targetPlatform.isDarwin
+      then {
+        "macos" = "macosx";
+        "ios" = "iphoneos";
+        #iphonesimulator
+        #appletvos
+        #appletvsimulator
+        #watchos
+        #watchsimulator
+      }.${targetPlatform.darwinPlatform}
+        or (throw "Cannot build Swift for target Darwin platform '${targetPlatform.darwinPlatform}'")
+      else targetPlatform.parsed.kernel.name;
+
+    # Apple Silicon uses a different CPU name in the target triple.
+    swiftArch =
+      if stdenv.isDarwin && stdenv.isAarch64 then "arm64"
+      else targetPlatform.parsed.cpu.name;
+
+    # On Darwin, a `.swiftmodule` is a subdirectory in `lib/swift/<OS>`,
+    # containing binaries for supported archs. On other platforms, binaries are
+    # installed to `lib/swift/<OS>/<ARCH>`. Note that our setup-hook also adds
+    # `lib/swift` for convenience.
+    swiftLibSubdir = "lib/swift/${swiftOs}";
+    swiftModuleSubdir =
+      if hostPlatform.isDarwin
+      then "lib/swift/${swiftOs}"
+      else "lib/swift/${swiftOs}/${swiftArch}";
+
+    # And then there's also a separate subtree for statically linked  modules.
+    swiftStaticLibSubdir = lib.replaceStrings [ "/swift/" ] [ "/swift_static/" ] swiftLibSubdir;
+    swiftStaticModuleSubdir = lib.replaceStrings [ "/swift/" ] [ "/swift_static/" ] swiftModuleSubdir;
+  };
+
+  swift = stdenv.mkDerivation (wrapperParams // {
     inherit src version;
 
     name = "swift";
@@ -20,7 +67,8 @@ let
     phases = [ "installPhase" "checkPhase" ];
 
     installPhase = ''
-      mkdir $out
+      mkdir -p $out/nix-support
+
       tar --strip-components=2 -xf $src -C $out
 
       rpath=$rpath''${rpath:+:}$out/lib
@@ -43,17 +91,29 @@ let
           --set-rpath "$rpath" {} \;
 
       find $out/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
+
+      export swiftDriver="$out/bin/swift-frontend"
+
+      # Replace specific binaries with wrappers.
+      for executable in swift swiftc; do
+        export prog=$out/bin/$executable
+        rm $out/bin/$executable
+        substituteAll '${./build/wrapper.sh}' $out/bin/$executable
+        chmod a+x $out/bin/$executable
+      done
+
+      substituteAll ${./build/setup-hook.sh} $out/nix-support/setup-hook
     '';
 
     doCheck = true;
     checkPhase = ''
       $out/bin/swift --version
     '';
-  };
+  });
 in
 buildFHSEnv {
   name = "swift-env";
-  targetPkgs = pkgs: (with pkgs; [ swift llvmPackages_17.clang stdenv.cc.libc.dev ]);
-  # multiPkgs = pkgs: (with pkgs; [ swift ]);
-  runScript = "swift";
+  targetPkgs = pkgs: (with pkgs; [ swift clang ]);
+  multiPkgs = pkgs: (with pkgs; [ stdenv.cc.cc stdenv.cc.libc stdenv.cc.libc.dev ]);
+  runScript = "/usr/bin/swift";
 }

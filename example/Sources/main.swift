@@ -9,7 +9,7 @@ import Musl
 #elseif os(Windows)
 import ucrt
 #else
-#error(Unknown platform)
+#error("Unknown platform")
 #endif
 
 print("Success!")
