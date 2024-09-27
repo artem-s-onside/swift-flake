@@ -13,7 +13,8 @@
         pkgs = nixpkgs.legacyPackages.${system};
         swift = pkgs.callPackage ./build.nix { };
         derivation = { inherit swift; };
-      in rec {
+      in
+      rec {
         packages = derivation // { default = swift; };
         legacyPackages = pkgs.extend overlay;
         nixosModules.default = {
