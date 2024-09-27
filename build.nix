@@ -95,7 +95,7 @@ let
       export swiftDriver="$out/bin/swift-frontend"
 
       # Replace specific binaries with wrappers.
-      for executable in swift swiftc; do
+      for executable in swift; do
         export prog=$out/bin/$executable
         rm $out/bin/$executable
         substituteAll '${./build/wrapper.sh}' $out/bin/$executable
