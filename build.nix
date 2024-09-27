@@ -1,5 +1,7 @@
 { pkgs, src }:
 
+# TODO: add bootstrap version https://forums.swift.org/t/building-the-swift-project-on-linux-with-lld-instead-of-gold/73303/24
+
 with pkgs;
 
 let
@@ -41,11 +43,12 @@ in stdenv.mkDerivation {
         --set-rpath "$rpath" {} \;
 
     find $out/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
+
+    cp -r ${stdenv.cc.libc.dev}/include/* $out/lib/clang/17/include/
   '';
 
   doCheck = true;
   checkPhase = ''
-    ${strace}/bin/strace $out/bin/swift --version
-    # exit 1
+    $out/bin/swift --version
   '';
 }
