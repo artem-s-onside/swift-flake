@@ -110,10 +110,27 @@ let
       $out/bin/swift --version
     '';
   });
+  fhsEnv = buildFHSEnv {
+    name = "swift-env";
+    targetPkgs = pkgs: (with pkgs; [ clang ]);
+    multiPkgs = pkgs: (with pkgs; [ stdenv.cc.cc stdenv.cc.libc stdenv.cc.libc.dev ]);
+  };
 in
-buildFHSEnv {
-  name = "swift-env";
-  targetPkgs = pkgs: (with pkgs; [ swift clang ]);
-  multiPkgs = pkgs: (with pkgs; [ stdenv.cc.cc stdenv.cc.libc stdenv.cc.libc.dev ]);
-  runScript = "/usr/bin/swift";
+stdenv.mkDerivation {
+  inherit version;
+
+  name = "swift";
+
+  phases = [ "installPhase" ];
+
+  installPhase = ''
+    mkdir -p $out/bin
+
+    cat <<EOF > $out/bin/swift
+    #!${runtimeShell}
+    ${fhsEnv}/bin/swift-env ${swift}/bin/swift "\$@"
+    EOF
+
+    chmod +x $out/bin/swift
+  '';
 }

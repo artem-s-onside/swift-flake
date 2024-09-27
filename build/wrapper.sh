@@ -30,7 +30,7 @@ if [[ "$progName" == swift ]]; then
         "" | -* | *.* | */* | repl)
             ;;
         *)
-            exec "swift-$firstArg" "${params[@]:1}"
+            exec "$prog-$firstArg" "${params[@]:1}"
             ;;
     esac
 fi
