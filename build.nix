@@ -1,4 +1,9 @@
-{ pkgs, src }:
+{ pkgs
+, src
+, replaceLlvm ? true
+, replaceClang ? true
+, replaceLld ? true
+}:
 
 # TODO: add bootstrap version https://forums.swift.org/t/building-the-swift-project-on-linux-with-lld-instead-of-gold/73303/24
 
@@ -16,7 +21,11 @@ let
 
   fhsEnv = buildFHSEnv {
     name = "swift-env";
-    targetPkgs = pkgs: (with pkgs; [ clang llvm.lld llvm.llvm ]);
+    targetPkgs = pkgs: (with pkgs;
+      lib.optionals replaceLlvm [ llvm.llvm ]
+      ++ lib.optionals replaceLld [ llvm.lld ]
+      ++ lib.optionals replaceClang [ clang ]
+    );
     multiPkgs = pkgs: (with pkgs; [ stdenv.cc.cc stdenv.cc.libc stdenv.cc.libc.dev ]);
   };
 
@@ -77,22 +86,22 @@ stdenv.mkDerivation (wrapperParams // {
     mkdir -p $out/nix-support
 
     tar --strip-components=2 -xf $src -C $out
-
-    rm -rf $out/bin/clang-17 \
-      $out/bin/clangd \
-      $out/bin/lld \
-      $out/lib/clang
+  '' + lib.optionalString replaceClang ''
+    rm -rf $out/bin/clang-17 $out/bin/clangd $out/lib/clang
 
     ln -s ${clang}/bin/clang $out/bin/clang-17
     ln -s ${llvm.clang-unwrapped}/bin/clangd $out/bin/clangd
-    ln -s ${llvm.lld}/bin/lld $out/bin/lld
     ln -s ${libclang.lib}/lib/clang $out/lib/clang
+  '' + lib.optionalString replaceLld ''
+    rm -rf $out/bin/lld
 
+    ln -s ${llvm.lld}/bin/lld $out/bin/lld
+  '' + lib.optionalString replaceLlvm ''
     for executable in llvm-ar llvm-cov llvm-profdata; do
       rm -rf $out/bin/$executable
       ln -s ${llvm.llvm}/bin/$executable $out/bin/$executable
     done
-
+  '' + ''
     rpath=$rpath''${rpath:+:}$out/lib
     rpath=$rpath''${rpath:+:}$out/lib/swift/host
     rpath=$rpath''${rpath:+:}$out/lib/swift/linux
