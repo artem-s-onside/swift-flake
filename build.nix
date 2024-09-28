@@ -16,6 +16,7 @@ let
 
   fhsEnv = buildFHSEnv {
     name = "swift-env";
+    targetPkgs = pkgs: (with pkgs; [ clang llvm.lld llvm.llvm ]);
     multiPkgs = pkgs: (with pkgs; [ stdenv.cc.cc stdenv.cc.libc stdenv.cc.libc.dev ]);
   };
 
@@ -77,8 +78,20 @@ stdenv.mkDerivation (wrapperParams // {
 
     tar --strip-components=2 -xf $src -C $out
 
-    rm -rf $out/lib/clang
+    rm -rf $out/bin/clang-17 \
+      $out/bin/clangd \
+      $out/bin/lld \
+      $out/lib/clang
+
+    ln -s ${clang}/bin/clang $out/bin/clang-17
+    ln -s ${llvm.clang-unwrapped}/bin/clangd $out/bin/clangd
+    ln -s ${llvm.lld}/bin/lld $out/bin/lld
     ln -s ${libclang.lib}/lib/clang $out/lib/clang
+
+    for executable in llvm-ar llvm-cov llvm-profdata; do
+      rm -rf $out/bin/$executable
+      ln -s ${llvm.llvm}/bin/$executable $out/bin/$executable
+    done
 
     rpath=$rpath''${rpath:+:}$out/lib
     rpath=$rpath''${rpath:+:}$out/lib/swift/host
