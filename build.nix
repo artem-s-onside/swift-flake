@@ -1,8 +1,8 @@
 { pkgs
 , src
-, replaceLlvm ? true
-, replaceClang ? true
-, replaceLld ? true
+, replaceLlvm ? pkgs.stdenv.isLinux
+, replaceClang ? pkgs.stdenv.isLinux
+, replaceLld ? pkgs.stdenv.isLinux
 }:
 
 # TODO: add bootstrap version https://forums.swift.org/t/building-the-swift-project-on-linux-with-lld-instead-of-gold/73303/24
@@ -11,13 +11,23 @@ with pkgs;
 
 let
   version = "6.0.1";
-  src = fetchurl {
-    url = "https://download.swift.org/swift-${version}-release/ubi9/swift-${version}-RELEASE/swift-${version}-RELEASE-ubi9.tar.gz";
-    hash = "sha256-MQbDGfL+BgaI8tW4LNRPp5WjivFqIhfPX7vyfjA9mC4=";
-  };
+
+  src =
+    if stdenv.hostPlatform.system == "x86_64-linux" then
+      fetchurl {
+        url = "https://download.swift.org/swift-${version}-release/ubi9/swift-${version}-RELEASE/swift-${version}-RELEASE-ubi9.tar.gz";
+        hash = "sha256-MQbDGfL+BgaI8tW4LNRPp5WjivFqIhfPX7vyfjA9mC4=";
+      }
+    else if stdenv.hostPlatform.system == "aarch64-darwin" then
+      fetchurl {
+        url = "https://download.swift.org/swift-${version}-release/xcode/swift-${version}-RELEASE/swift-${version}-RELEASE-osx.pkg";
+        hash = "sha256-kkqezUwvj2/ihKsMlmMF4y65jRfUq/pHKJuwoGH3L4k=";
+      }
+    else throw "Unsupproted system: ${stdenv.hostPlatform.system}";
 
   llvm = llvmPackages_17;
   clang = llvm.clang;
+  stdenv = llvm.stdenv;
 
   fhsEnv = buildFHSEnv {
     name = "swift-env";
@@ -78,33 +88,42 @@ stdenv.mkDerivation (wrapperParams // {
 
   name = "swift";
 
-  buildInputs = [ makeWrapper ];
+  buildInputs = [ makeWrapper ]
+    ++ lib.optionals stdenv.isDarwin [ xar cpio ];
 
-  phases = [ "installPhase" "checkPhase" ];
+  phases = [ "unpackPhase" "installPhase" "checkPhase" ];
+
+  unpackPhase = lib.optionalString stdenv.isLinux ''
+    tar --strip-components=1 -xf $src
+  '' + lib.optionalString stdenv.isDarwin ''
+    xar -xf $src
+    zcat < swift-${version}-RELEASE-osx-package.pkg/Payload | cpio -i
+  '';
 
   installPhase = ''
-    mkdir -p $out/nix-support
-
-    tar --strip-components=2 -xf $src -C $out
+    cp -R . $out
+    mkdir $out/bin
   '' + lib.optionalString replaceClang ''
-    rm -rf $out/bin/clang-17 $out/bin/clangd $out/lib/clang
+    rm -rf $out/usr/bin/clang-17 $out/usr/bin/clangd $out/usr/lib/clang
 
-    ln -s ${clang}/bin/clang $out/bin/clang-17
-    ln -s ${llvm.clang-unwrapped}/bin/clangd $out/bin/clangd
-    ln -s ${libclang.lib}/lib/clang $out/lib/clang
+    ln -s ${clang}/bin/clang $out/usr/bin/clang-17
+    ln -s ${llvm.clang-unwrapped}/bin/clangd $out/usr/bin/clangd
+    ln -s ${libclang.lib}/lib/clang $out/usr/lib/clang
   '' + lib.optionalString replaceLld ''
-    rm -rf $out/bin/lld
+    rm -rf $out/usr/bin/lld
 
-    ln -s ${llvm.lld}/bin/lld $out/bin/lld
+    ln -s ${llvm.lld}/bin/lld $out/usr/bin/lld
   '' + lib.optionalString replaceLlvm ''
     for executable in llvm-ar llvm-cov llvm-profdata; do
-      rm -rf $out/bin/$executable
-      ln -s ${llvm.llvm}/bin/$executable $out/bin/$executable
+      rm -rf $out/usr/bin/$executable
+      ln -s ${llvm.llvm}/bin/$executable $out/usr/bin/$executable
     done
-  '' + ''
-    rpath=$rpath''${rpath:+:}$out/lib
-    rpath=$rpath''${rpath:+:}$out/lib/swift/host
-    rpath=$rpath''${rpath:+:}$out/lib/swift/linux
+  '' + lib.optionalString stdenv.isDarwin ''
+    ln -s $out/usr/bin/swift-driver $out/bin/swift
+  '' + lib.optionalString stdenv.isLinux ''
+    rpath=$rpath''${rpath:+:}$out/usr/lib
+    rpath=$rpath''${rpath:+:}$out/usr/lib/swift/host
+    rpath=$rpath''${rpath:+:}$out/usr/lib/swift/linux
     rpath=$rpath''${rpath:+:}${stdenv.cc.cc.lib}/lib
     rpath=$rpath''${rpath:+:}${stdenv.cc.cc}/lib
     rpath=$rpath''${rpath:+:}${sqlite.out}/lib
@@ -117,28 +136,29 @@ stdenv.mkDerivation (wrapperParams // {
     rpath=$rpath''${rpath:+:}${libedit}/lib
 
     # set all the dynamic linkers
-    find $out/bin -type f -perm -0100 \
+    find $out/usr/bin -type f -perm -0100 \
       -exec patchelf --interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
       --set-rpath "$rpath" {} \;
 
-    find $out/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
+    find $out/usr/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
 
-    rm $out/bin/swift
-    swiftDriver="$out/bin/swift-frontend" \
-      prog=$out/bin/swift \
-      substituteAll '${./build/wrapper.sh}' $out/bin/.swift-wrapper
+    rm $out/usr/bin/swift
+    swiftDriver="$out/usr/bin/swift-frontend" \
+      prog=$out/usr/bin/swift \
+      substituteAll '${./build/wrapper.sh}' $out/usr/bin/.swift-wrapper
 
     cat > $out/bin/swift <<-EOF
     #!${runtimeShell}
-    ${fhsEnv}/bin/swift-env $out/bin/.swift-wrapper "\$@"
+    ${fhsEnv}/bin/swift-env $out/usr/bin/.swift-wrapper "\$@"
     EOF
 
-    chmod +x $out/bin/.swift-wrapper $out/bin/swift
+    chmod +x $out/usr/bin/.swift-wrapper $out/bin/swift
 
+    mkdir -p $out/nix-support
     substituteAll ${./build/setup-hook.sh} $out/nix-support/setup-hook
   '';
 
-  doCheck = true;
+  doCheck = stdenv.isLinux; # TODO: macOS
   checkPhase = ''
     $out/bin/swift --version
   '';
