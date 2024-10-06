@@ -145,7 +145,7 @@ stdenv.mkDerivation (wrapperParams // {
     find $out/usr/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
 
     rm $out/usr/bin/swift
-    swiftDriver="$out/usr/bin/swift-frontend" \
+    swiftDriver="$out/usr/bin/swift-driver" \
       prog=$out/usr/bin/swift \
       substituteAll '${./build/wrapper.sh}' $out/usr/bin/.swift-wrapper
 
