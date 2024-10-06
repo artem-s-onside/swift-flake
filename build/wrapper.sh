@@ -22,6 +22,7 @@ prog=@prog@
 progName=@progName@
 firstArg="${params[0]:-}"
 isFrontend=0
+isRepl=0
 
 # These checks follow `shouldRunAsSubcommand`.
 if [[ "$progName" == swift ]]; then
@@ -53,6 +54,7 @@ case "$firstArg" in
         exec -a "$progName" "$prog" "${params[@]}"
         ;;
     repl)
+        isRepl=1
         params=( "${params[@]:1}" )
         ;;
     --driver-mode=*)
@@ -76,6 +78,9 @@ if [[
     prog=@swiftDriver@
     # Driver mode must be the very first argument.
     extraBefore+=( "--driver-mode=$progName" )
+    if [[ $isRepl = 1 ]]; then
+        extraBefore+=( "-repl" )
+    fi
 
     # Ensure swift-driver invokes the unwrapped frontend (instead of finding
     # the wrapped one via PATH), because we don't have to wrap a second time.
