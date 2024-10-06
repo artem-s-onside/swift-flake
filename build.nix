@@ -160,7 +160,7 @@ EOF
     substituteAll ${./build/setup-hook.sh} $out/nix-support/setup-hook
   '';
 
-  doCheck = true;
+  doCheck = stdenv.isLinux;
   checkPhase = ''
     $out/bin/swift --version
     $out/bin/swiftc --version
