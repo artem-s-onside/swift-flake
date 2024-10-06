@@ -103,6 +103,10 @@ stdenv.mkDerivation (wrapperParams // {
   installPhase = ''
     cp -R . $out
     mkdir $out/bin
+
+    for progName in swift-symbolgraph-extract swift-autolink-extract; do
+      ln -s $out/usr/bin/swift-frontend $out/bin/$progName
+    done
   '' + lib.optionalString replaceClang ''
     rm -rf $out/usr/bin/clang-17 $out/usr/bin/clangd $out/usr/lib/clang
 
