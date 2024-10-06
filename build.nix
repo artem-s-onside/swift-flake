@@ -119,8 +119,14 @@ stdenv.mkDerivation (wrapperParams // {
       ln -s ${llvm.llvm}/bin/$executable $out/usr/bin/$executable
     done
   '' + lib.optionalString stdenv.isDarwin ''
-    ln -s $out/usr/bin/swift-driver $out/bin/swift
-    ln -s $out/usr/bin/swift-driver $out/bin/swiftc
+    swiftDriver="$out/usr/bin/swift-driver"
+    for progName in swift swiftc; do
+      prog=$out/usr/bin/$progName
+      export prog progName swiftDriver
+      rm $out/usr/bin/$progName
+      substituteAll '${./build/wrapper.sh}' $out/bin/$progName
+      chmod a+x $out/bin/$progName
+    done
   '' + lib.optionalString stdenv.isLinux ''
     rpath=$rpath''${rpath:+:}$out/usr/lib
     rpath=$rpath''${rpath:+:}$out/usr/lib/swift/host
@@ -155,12 +161,12 @@ stdenv.mkDerivation (wrapperParams // {
 EOF
       chmod a+x $out/bin/$progName $out/usr/bin/$progName
     done
-
+  '' + ''
     mkdir -p $out/nix-support
     substituteAll ${./build/setup-hook.sh} $out/nix-support/setup-hook
   '';
 
-  doCheck = stdenv.isLinux;
+  doCheck = true;
   checkPhase = ''
     $out/bin/swift --version
     $out/bin/swiftc --version
