@@ -103,8 +103,6 @@ stdenv.mkDerivation (wrapperParams // {
   installPhase = ''
     cp -R . $out
     mkdir $out/bin
-
-    ln -s $out/bin/swift $out/bin/swiftc
   '' + lib.optionalString replaceClang ''
     rm -rf $out/usr/bin/clang-17 $out/usr/bin/clangd $out/usr/lib/clang
 
@@ -122,6 +120,7 @@ stdenv.mkDerivation (wrapperParams // {
     done
   '' + lib.optionalString stdenv.isDarwin ''
     ln -s $out/usr/bin/swift-driver $out/bin/swift
+    ln -s $out/usr/bin/swift-driver $out/bin/swiftc
   '' + lib.optionalString stdenv.isLinux ''
     rpath=$rpath''${rpath:+:}$out/usr/lib
     rpath=$rpath''${rpath:+:}$out/usr/lib/swift/host
@@ -144,24 +143,26 @@ stdenv.mkDerivation (wrapperParams // {
 
     find $out/usr/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
 
-    rm $out/usr/bin/swift
-    swiftDriver="$out/usr/bin/swift-driver" \
-      prog=$out/usr/bin/swift \
-      substituteAll '${./build/wrapper.sh}' $out/usr/bin/.swift-wrapper
-
-    cat > $out/bin/swift <<-EOF
-    #!${runtimeShell}
-    ${fhsEnv}/bin/swift-env $out/usr/bin/.swift-wrapper "\$@"
-    EOF
-
-    chmod +x $out/usr/bin/.swift-wrapper $out/bin/swift
+    swiftDriver="$out/usr/bin/swift-driver"
+    for progName in swift swiftc; do
+      prog=$out/usr/bin/$progName
+      export prog progName swiftDriver
+      rm $out/usr/bin/$progName
+      substituteAll '${./build/wrapper.sh}' $out/usr/bin/$progName
+      cat > $out/bin/$progName <<-EOF
+      #!${runtimeShell}
+      ${fhsEnv}/bin/swift-env $out/usr/bin/$progName "\$@"
+EOF
+      chmod a+x $out/bin/$progName $out/usr/bin/$progName
+    done
 
     mkdir -p $out/nix-support
     substituteAll ${./build/setup-hook.sh} $out/nix-support/setup-hook
   '';
 
-  doCheck = stdenv.isLinux; # TODO: macOS
+  doCheck = true;
   checkPhase = ''
     $out/bin/swift --version
+    $out/bin/swiftc --version
   '';
 })
