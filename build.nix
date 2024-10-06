@@ -132,7 +132,7 @@ stdenv.mkDerivation (wrapperParams // {
     rpath=$rpath''${rpath:+:}$out/usr/lib/swift/host
     rpath=$rpath''${rpath:+:}$out/usr/lib/swift/linux
     rpath=$rpath''${rpath:+:}${stdenv.cc.cc.lib}/lib
-    rpath=$rpath''${rpath:+:}${stdenv.cc.cc}/lib
+    rpath=$rpath''${rpath:+:}${gcc.cc.lib}/lib
     rpath=$rpath''${rpath:+:}${sqlite.out}/lib
     rpath=$rpath''${rpath:+:}${ncurses}/lib
     rpath=$rpath''${rpath:+:}${libuuid.lib}/lib
@@ -155,10 +155,12 @@ stdenv.mkDerivation (wrapperParams // {
       export prog progName swiftDriver
       rm $out/usr/bin/$progName
       substituteAll '${./build/wrapper.sh}' $out/usr/bin/$progName
+
       cat > $out/bin/$progName <<-EOF
-      #!${runtimeShell}
-      ${fhsEnv}/bin/swift-env $out/usr/bin/$progName "\$@"
+#!${runtimeShell}
+${fhsEnv}/bin/swift-env $out/usr/bin/$progName "\$@"
 EOF
+
       chmod a+x $out/bin/$progName $out/usr/bin/$progName
     done
   '' + ''
