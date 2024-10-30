@@ -38,7 +38,7 @@ jobs:
         EOF
         chmod +x ssh-git.sh
 
-    - name: Build on linux
+    - name: Build
       env:
         GIT_SSH: ${{ github.workspace }}/ssh-git.sh
       run: |
