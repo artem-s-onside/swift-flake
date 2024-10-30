@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [nixos, macmini]
+        runner: [nixos, macminiM2]
     timeout-minutes: 30
     runs-on: ${{ matrix.runner }}
     steps:
