@@ -10,18 +10,18 @@
 with pkgs;
 
 let
-  version = "6.0.1";
+  version = "6.0.2";
 
   src =
     if stdenv.hostPlatform.system == "x86_64-linux" then
       fetchurl {
         url = "https://download.swift.org/swift-${version}-release/ubi9/swift-${version}-RELEASE/swift-${version}-RELEASE-ubi9.tar.gz";
-        hash = "sha256-MQbDGfL+BgaI8tW4LNRPp5WjivFqIhfPX7vyfjA9mC4=";
+        hash = "sha256-2AWL+mCk4P7aOycvYoBnc8QKixnVADX/X4TwQL/E0PM=";
       }
     else if stdenv.hostPlatform.system == "aarch64-darwin" then
       fetchurl {
         url = "https://download.swift.org/swift-${version}-release/xcode/swift-${version}-RELEASE/swift-${version}-RELEASE-osx.pkg";
-        hash = "sha256-kkqezUwvj2/ihKsMlmMF4y65jRfUq/pHKJuwoGH3L4k=";
+        hash = "sha256-sR405J8hjQJ/AL9xyL3JoM+inF61k5mWvzUJUWqwFek=";
       }
     else throw "Unsupproted system: ${stdenv.hostPlatform.system}";
 
