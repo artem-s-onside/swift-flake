@@ -157,6 +157,8 @@ stdenv.mkDerivation (wrapperParams // {
   '' + ''
     mkdir -p $out/nix-support
     substituteAll ${./build/setup-hook.sh} $out/nix-support/setup-hook
+
+    ln -s $out/usr/lib $out/lib
   '';
 
   doCheck = true;
