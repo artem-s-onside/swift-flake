@@ -1,4 +1,4 @@
-#! @shell@
+#!@shell@
 # NOTE: This wrapper is derived from cc-wrapper.sh, and is hopefully somewhat
 # diffable with the original, so changes can be merged if necessary.
 set -eu -o pipefail +o posix
@@ -23,6 +23,15 @@ progName=@progName@
 firstArg="${params[0]:-}"
 isFrontend=0
 isRepl=0
+
+export PATH="@swift@/usr/bin:$PATH"
+
+# Ensure swift-driver invokes the unwrapped frontend (instead of finding
+# the wrapped one via PATH), because we don't have to wrap a second time.
+export SWIFT_DRIVER_SWIFT_FRONTEND_EXEC="@swift@/usr/bin/swift-frontend"
+
+# Ensure swift-driver can find the LLDB with Swift support for the REPL.
+export SWIFT_DRIVER_LLDB_EXEC="@swift@/usr/bin/lldb"
 
 # These checks follow `shouldRunAsSubcommand`.
 if [[ "$progName" == swift ]]; then
@@ -51,7 +60,7 @@ case "$firstArg" in
         ;;
     -modulewrap)
         # Don't wrap this integrated tool.
-        exec -a "$progName" "$prog" "${params[@]}"
+        exec -a "$progName" "@swiftDriver@" "${params[@]}"
         ;;
     repl)
         isRepl=1
@@ -81,13 +90,6 @@ if [[
     if [[ $isRepl = 1 ]]; then
         extraBefore+=( "-repl" )
     fi
-
-    # Ensure swift-driver invokes the unwrapped frontend (instead of finding
-    # the wrapped one via PATH), because we don't have to wrap a second time.
-    export SWIFT_DRIVER_SWIFT_FRONTEND_EXEC="@swift@/usr/bin/swift-frontend"
-
-    # Ensure swift-driver can find the LLDB with Swift support for the REPL.
-    export SWIFT_DRIVER_LLDB_EXEC="@swift@/usr/bin/lldb"
 fi
 
 path_backup="$PATH"
@@ -173,6 +175,8 @@ source $cc_wrapper/nix-support/add-hardening.sh
 addCFlagsToList() {
     declare -n list="$1"
     shift
+
+    list+=("-sdk" "@sdk@" "-Xcc" "--sysroot=@sdk@")
 
     for ((i = 1; i <= $#; i++)); do
         local val="${!i}"

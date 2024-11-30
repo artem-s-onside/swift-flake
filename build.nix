@@ -29,16 +29,6 @@ let
   clang = llvm.clang;
   stdenv = llvm.stdenv;
 
-  fhsEnv = buildFHSEnv {
-    name = "swift-env";
-    targetPkgs = pkgs: (with pkgs;
-      lib.optionals replaceLlvm [ llvm.llvm ]
-      ++ lib.optionals replaceLld [ llvm.lld ]
-      ++ lib.optionals replaceClang [ clang ]
-    );
-    multiPkgs = pkgs: (with pkgs; [ stdenv.cc.cc stdenv.cc.libc stdenv.cc.libc.dev ]);
-  };
-
   wrapperParams = rec {
     inherit bintools;
 
@@ -107,12 +97,14 @@ stdenv.mkDerivation (wrapperParams // {
     for progName in swift-symbolgraph-extract swift-autolink-extract; do
       ln -s $out/usr/bin/swift-frontend $out/bin/$progName
     done
+
+    swift=$out
+    sdk=${lib.getDev stdenv.cc.libc}
   '' + lib.optionalString replaceClang ''
-    rm -rf $out/usr/bin/clang-17 $out/usr/bin/clangd $out/usr/lib/clang
+    rm -rf $out/usr/bin/clang-17 $out/usr/bin/clangd
 
     ln -s ${clang}/bin/clang $out/usr/bin/clang-17
     ln -s ${llvm.clang-unwrapped}/bin/clangd $out/usr/bin/clangd
-    ln -s ${libclang.lib}/lib/clang $out/usr/lib/clang
   '' + lib.optionalString replaceLld ''
     rm -rf $out/usr/bin/lld
 
@@ -126,7 +118,7 @@ stdenv.mkDerivation (wrapperParams // {
     swiftDriver="$out/usr/bin/swift-driver"
     for progName in swift swiftc; do
       prog=$out/usr/bin/$progName
-      export prog progName swiftDriver
+      export prog progName swift swiftDriver sdk
       rm $out/usr/bin/$progName
       substituteAll '${./build/wrapper.sh}' $out/bin/$progName
       chmod a+x $out/bin/$progName
@@ -156,16 +148,11 @@ stdenv.mkDerivation (wrapperParams // {
     swiftDriver="$out/usr/bin/swift-driver"
     for progName in swift swiftc; do
       prog=$out/usr/bin/$progName
-      export prog progName swiftDriver
+      export prog progName swift swiftDriver sdk
       rm $out/usr/bin/$progName
       substituteAll '${./build/wrapper.sh}' $out/usr/bin/$progName
-
-      cat > $out/bin/$progName <<-EOF
-#!${runtimeShell}
-${fhsEnv}/bin/swift-env $out/usr/bin/$progName "\$@"
-EOF
-
-      chmod a+x $out/bin/$progName $out/usr/bin/$progName
+      chmod a+x $out/usr/bin/$progName
+      ln -s $out/usr/bin/$progName $out/bin/$progName
     done
   '' + ''
     mkdir -p $out/nix-support
