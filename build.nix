@@ -99,7 +99,6 @@ stdenv.mkDerivation (wrapperParams // {
     done
 
     swift=$out
-    sdk=${lib.getDev stdenv.cc.libc}
   '' + lib.optionalString replaceClang ''
     rm -rf $out/usr/bin/clang-17 $out/usr/bin/clangd
 
@@ -115,6 +114,7 @@ stdenv.mkDerivation (wrapperParams // {
       ln -s ${llvm.llvm}/bin/$executable $out/usr/bin/$executable
     done
   '' + lib.optionalString stdenv.isDarwin ''
+    sdk=""
     swiftDriver="$out/usr/bin/swift-driver"
     for progName in swift swiftc; do
       prog=$out/usr/bin/$progName
@@ -145,6 +145,7 @@ stdenv.mkDerivation (wrapperParams // {
 
     find $out/usr/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
 
+    sdk=${lib.getDev stdenv.cc.libc}
     swiftDriver="$out/usr/bin/swift-driver"
     for progName in swift swiftc; do
       prog=$out/usr/bin/$progName
