@@ -176,10 +176,6 @@ addCFlagsToList() {
     declare -n list="$1"
     shift
 
-    if [[ -n "@sdk@" ]]; then
-        list+=("-sdk" "@sdk@" "-Xcc" "--sysroot=@sdk@")
-    fi
-
     for ((i = 1; i <= $#; i++)); do
         local val="${!i}"
         case "$val" in

@@ -1,8 +1,5 @@
 { pkgs
 , src
-, replaceLlvm ? pkgs.stdenv.isLinux
-, replaceClang ? pkgs.stdenv.isLinux
-, replaceLld ? pkgs.stdenv.isLinux
 }:
 
 # TODO: add bootstrap version https://forums.swift.org/t/building-the-swift-project-on-linux-with-lld-instead-of-gold/73303/24
@@ -10,13 +7,13 @@
 with pkgs;
 
 let
-  version = "6.0.2";
+  version = "6.0.3";
 
   src =
     if stdenv.hostPlatform.system == "x86_64-linux" then
       fetchurl {
         url = "https://download.swift.org/swift-${version}-release/ubi9/swift-${version}-RELEASE/swift-${version}-RELEASE-ubi9.tar.gz";
-        hash = "sha256-2AWL+mCk4P7aOycvYoBnc8QKixnVADX/X4TwQL/E0PM=";
+        hash = "sha256-ZWH3BvGLk+Qq8e8zDhG7uGp3p8w5gl6Ht2aaolWjgHg=";
       }
     else if stdenv.hostPlatform.system == "aarch64-darwin" then
       fetchurl {
@@ -28,6 +25,12 @@ let
   llvm = llvmPackages_17;
   clang = llvm.clang;
   stdenv = llvm.stdenv;
+
+  fhsEnv = buildFHSEnv {
+    name = "swift-env";
+    targetPkgs = pkgs: [ llvm.llvm llvm.lld clang ];
+    multiPkgs = pkgs: (with pkgs; [ stdenv.cc.cc stdenv.cc.libc stdenv.cc.libc.dev ]);
+  };
 
   wrapperParams = rec {
     inherit bintools;
@@ -99,22 +102,7 @@ stdenv.mkDerivation (wrapperParams // {
     done
 
     swift=$out
-  '' + lib.optionalString replaceClang ''
-    rm -rf $out/usr/bin/clang-17 $out/usr/bin/clangd
-
-    ln -s ${clang}/bin/clang $out/usr/bin/clang-17
-    ln -s ${llvm.clang-unwrapped}/bin/clangd $out/usr/bin/clangd
-  '' + lib.optionalString replaceLld ''
-    rm -rf $out/usr/bin/lld
-
-    ln -s ${llvm.lld}/bin/lld $out/usr/bin/lld
-  '' + lib.optionalString replaceLlvm ''
-    for executable in llvm-ar llvm-cov llvm-profdata; do
-      rm -rf $out/usr/bin/$executable
-      ln -s ${llvm.llvm}/bin/$executable $out/usr/bin/$executable
-    done
   '' + lib.optionalString stdenv.isDarwin ''
-    sdk=""
     swiftDriver="$out/usr/bin/swift-driver"
     for progName in swift swiftc; do
       prog=$out/usr/bin/$progName
@@ -124,6 +112,19 @@ stdenv.mkDerivation (wrapperParams // {
       chmod a+x $out/bin/$progName
     done
   '' + lib.optionalString stdenv.isLinux ''
+    rm -rf $out/usr/bin/clang-17 $out/usr/bin/clangd \
+      $out/usr/bin/lld
+
+    ln -s ${clang}/bin/clang $out/usr/bin/clang-17
+    ln -s ${llvm.clang-unwrapped}/bin/clangd $out/usr/bin/clangd
+
+    ln -s ${llvm.lld}/bin/lld $out/usr/bin/lld
+
+    for executable in llvm-ar llvm-cov llvm-profdata; do
+      rm -rf $out/usr/bin/$executable
+      ln -s ${llvm.llvm}/bin/$executable $out/usr/bin/$executable
+    done
+
     rpath=$rpath''${rpath:+:}$out/usr/lib
     rpath=$rpath''${rpath:+:}$out/usr/lib/swift/host
     rpath=$rpath''${rpath:+:}$out/usr/lib/swift/linux
@@ -145,15 +146,18 @@ stdenv.mkDerivation (wrapperParams // {
 
     find $out/usr/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
 
-    sdk=${lib.getDev stdenv.cc.libc}
     swiftDriver="$out/usr/bin/swift-driver"
     for progName in swift swiftc; do
       prog=$out/usr/bin/$progName
       export prog progName swift swiftDriver sdk
       rm $out/usr/bin/$progName
       substituteAll '${./build/wrapper.sh}' $out/usr/bin/$progName
-      chmod a+x $out/usr/bin/$progName
-      ln -s $out/usr/bin/$progName $out/bin/$progName
+
+      cat > $out/bin/$progName <<-EOF
+#!${runtimeShell}
+${fhsEnv}/bin/swift-env $out/usr/bin/$progName "\$@"
+EOF
+      chmod a+x $out/bin/$progName $out/usr/bin/$progName
     done
   '' + ''
     mkdir -p $out/nix-support
