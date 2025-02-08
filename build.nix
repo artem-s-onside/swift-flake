@@ -18,7 +18,7 @@ let
     else if stdenv.hostPlatform.system == "aarch64-darwin" then
       fetchurl {
         url = "https://download.swift.org/swift-${version}-release/xcode/swift-${version}-RELEASE/swift-${version}-RELEASE-osx.pkg";
-        hash = "sha256-sR405J8hjQJ/AL9xyL3JoM+inF61k5mWvzUJUWqwFek=";
+        hash = "sha256-dkw9W6J0c0lCBieMJ9G7D9w6i8o17ZAu0DD2aZkE6QM=";
       }
     else throw "Unsupproted system: ${stdenv.hostPlatform.system}";
 
@@ -101,17 +101,6 @@ stdenv.mkDerivation (wrapperParams // {
       ln -s $out/usr/bin/swift-frontend $out/bin/$progName
     done
 
-    swift=$out
-  '' + lib.optionalString stdenv.isDarwin ''
-    swiftDriver="$out/usr/bin/swift-driver"
-    for progName in swift swiftc; do
-      prog=$out/usr/bin/$progName
-      export prog progName swift swiftDriver sdk
-      rm $out/usr/bin/$progName
-      substituteAll '${./build/wrapper.sh}' $out/bin/$progName
-      chmod a+x $out/bin/$progName
-    done
-  '' + lib.optionalString stdenv.isLinux ''
     rm -rf $out/usr/bin/clang-17 $out/usr/bin/clangd \
       $out/usr/bin/lld
 
@@ -125,6 +114,17 @@ stdenv.mkDerivation (wrapperParams // {
       ln -s ${llvm.llvm}/bin/$executable $out/usr/bin/$executable
     done
 
+    swift=$out
+  '' + lib.optionalString stdenv.isDarwin ''
+    swiftDriver="$out/usr/bin/swift-driver"
+    for progName in swift swiftc; do
+      prog=$out/usr/bin/$progName
+      export prog progName swift swiftDriver sdk
+      rm $out/usr/bin/$progName
+      substituteAll '${./build/wrapper.sh}' $out/bin/$progName
+      chmod a+x $out/bin/$progName
+    done
+  '' + lib.optionalString stdenv.isLinux ''
     rpath=$rpath''${rpath:+:}$out/usr/lib
     rpath=$rpath''${rpath:+:}$out/usr/lib/swift/host
     rpath=$rpath''${rpath:+:}$out/usr/lib/swift/linux
