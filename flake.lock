@@ -38,7 +38,9 @@
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
         "swift_60_linux": "swift_60_linux",
-        "swift_60_macos": "swift_60_macos"
+        "swift_60_macos": "swift_60_macos",
+        "swift_snapshot_linux": "swift_snapshot_linux",
+        "swift_snapshot_macos": "swift_snapshot_macos"
       }
     },
     "swift_60_linux": {
@@ -64,6 +66,31 @@
       "original": {
         "type": "file",
         "url": "https://download.swift.org/swift-6.0.3-release/xcode/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE-osx.pkg"
+      }
+    },
+    "swift_snapshot_linux": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1738967420,
+        "narHash": "sha256-2PNVjsKLCTU/hphz3pR9uXhDkToYx5lCBCgxgXd1734=",
+        "type": "tarball",
+        "url": "https://download.swift.org/swift-6.1-branch/ubi9/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a-ubi9.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://download.swift.org/swift-6.1-branch/ubi9/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a-ubi9.tar.gz"
+      }
+    },
+    "swift_snapshot_macos": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-AUktUVSEJYaJ3NElqo36ecWl1pPKf9OiIMCJTl7EjIc=",
+        "type": "file",
+        "url": "https://download.swift.org/swift-6.1-branch/xcode/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a-osx.pkg"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://download.swift.org/swift-6.1-branch/xcode/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a-osx.pkg"
       }
     },
     "systems": {
