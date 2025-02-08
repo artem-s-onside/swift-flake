@@ -4,14 +4,29 @@
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-24.11";
     flake-utils.url = "github:numtide/flake-utils";
+
+    swift_60_linux = {
+      url = "https://download.swift.org/swift-6.0.3-release/ubi9/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE-ubi9.tar.gz";
+      flake = false;
+    };
+    swift_60_macos = {
+      url = "https://download.swift.org/swift-6.0.3-release/xcode/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE-osx.pkg";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, swift_60_linux, swift_60_macos }:
     with flake-utils.lib; with system; eachSystem [ x86_64-linux aarch64-linux aarch64-darwin ] (system:
       let
         sources = (nixpkgs.lib.importJSON ./flake.lock).nodes;
         pkgs = nixpkgs.legacyPackages.${system};
-        swift = pkgs.callPackage ./build.nix { };
+        swift = with pkgs; callPackage ./build.nix {
+          src =
+            if stdenv.hostPlatform.system == "x86_64-linux" then swift_60_linux
+            else if stdenv.hostPlatform.system == "aarch64-darwin" then swift_60_macos
+            else throw "Unsupproted system: ${stdenv.hostPlatform.system}";
+          version = "6.0.3";
+        };
         derivation = { inherit swift; };
       in
       rec {

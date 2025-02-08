@@ -1,5 +1,6 @@
 { pkgs
 , src
+, version
 }:
 
 # TODO: add bootstrap version https://forums.swift.org/t/building-the-swift-project-on-linux-with-lld-instead-of-gold/73303/24
@@ -7,21 +8,6 @@
 with pkgs;
 
 let
-  version = "6.0.3";
-
-  src =
-    if stdenv.hostPlatform.system == "x86_64-linux" then
-      fetchurl {
-        url = "https://download.swift.org/swift-${version}-release/ubi9/swift-${version}-RELEASE/swift-${version}-RELEASE-ubi9.tar.gz";
-        hash = "sha256-ZWH3BvGLk+Qq8e8zDhG7uGp3p8w5gl6Ht2aaolWjgHg=";
-      }
-    else if stdenv.hostPlatform.system == "aarch64-darwin" then
-      fetchurl {
-        url = "https://download.swift.org/swift-${version}-release/xcode/swift-${version}-RELEASE/swift-${version}-RELEASE-osx.pkg";
-        hash = "sha256-dkw9W6J0c0lCBieMJ9G7D9w6i8o17ZAu0DD2aZkE6QM=";
-      }
-    else throw "Unsupproted system: ${stdenv.hostPlatform.system}";
-
   llvm = llvmPackages_17;
   clang = llvm.clang;
   stdenv = llvm.stdenv;
@@ -86,9 +72,7 @@ stdenv.mkDerivation (wrapperParams // {
 
   phases = [ "unpackPhase" "installPhase" "checkPhase" ];
 
-  unpackPhase = lib.optionalString stdenv.isLinux ''
-    tar --strip-components=1 -xf $src
-  '' + lib.optionalString stdenv.isDarwin ''
+  unpackPhase = lib.optionalString stdenv.isDarwin ''
     xar -xf $src
     zcat < swift-${version}-RELEASE-osx-package.pkg/Payload | cpio -i
   '';
@@ -125,40 +109,40 @@ stdenv.mkDerivation (wrapperParams // {
       chmod a+x $out/bin/$progName
     done
   '' + lib.optionalString stdenv.isLinux ''
-    rpath=$rpath''${rpath:+:}$out/usr/lib
-    rpath=$rpath''${rpath:+:}$out/usr/lib/swift/host
-    rpath=$rpath''${rpath:+:}$out/usr/lib/swift/linux
-    rpath=$rpath''${rpath:+:}${stdenv.cc.cc.lib}/lib
-    rpath=$rpath''${rpath:+:}${gcc.cc.lib}/lib
-    rpath=$rpath''${rpath:+:}${sqlite.out}/lib
-    rpath=$rpath''${rpath:+:}${ncurses}/lib
-    rpath=$rpath''${rpath:+:}${libuuid.lib}/lib
-    rpath=$rpath''${rpath:+:}${zlib}/lib
-    rpath=$rpath''${rpath:+:}${curl.out}/lib
-    rpath=$rpath''${rpath:+:}${libxml2.out}/lib
-    rpath=$rpath''${rpath:+:}${python39.out}/lib
-    rpath=$rpath''${rpath:+:}${libedit}/lib
+        rpath=$rpath''${rpath:+:}$out/usr/lib
+        rpath=$rpath''${rpath:+:}$out/usr/lib/swift/host
+        rpath=$rpath''${rpath:+:}$out/usr/lib/swift/linux
+        rpath=$rpath''${rpath:+:}${stdenv.cc.cc.lib}/lib
+        rpath=$rpath''${rpath:+:}${gcc.cc.lib}/lib
+        rpath=$rpath''${rpath:+:}${sqlite.out}/lib
+        rpath=$rpath''${rpath:+:}${ncurses}/lib
+        rpath=$rpath''${rpath:+:}${libuuid.lib}/lib
+        rpath=$rpath''${rpath:+:}${zlib}/lib
+        rpath=$rpath''${rpath:+:}${curl.out}/lib
+        rpath=$rpath''${rpath:+:}${libxml2.out}/lib
+        rpath=$rpath''${rpath:+:}${python39.out}/lib
+        rpath=$rpath''${rpath:+:}${libedit}/lib
 
-    # set all the dynamic linkers
-    find $out/usr/bin -type f -perm -0100 \
-      -exec patchelf --interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
-      --set-rpath "$rpath" {} \;
+        # set all the dynamic linkers
+        find $out/usr/bin -type f -perm -0100 \
+          -exec patchelf --interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
+          --set-rpath "$rpath" {} \;
 
-    find $out/usr/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
+        find $out/usr/lib -name "*.so" -exec patchelf --set-rpath "$rpath" --force-rpath {} \;
 
-    swiftDriver="$out/usr/bin/swift-driver"
-    for progName in swift swiftc; do
-      prog=$out/usr/bin/$progName
-      export prog progName swift swiftDriver sdk
-      rm $out/usr/bin/$progName
-      substituteAll '${./build/wrapper.sh}' $out/usr/bin/$progName
+        swiftDriver="$out/usr/bin/swift-driver"
+        for progName in swift swiftc; do
+          prog=$out/usr/bin/$progName
+          export prog progName swift swiftDriver sdk
+          rm $out/usr/bin/$progName
+          substituteAll '${./build/wrapper.sh}' $out/usr/bin/$progName
 
-      cat > $out/bin/$progName <<-EOF
-#!${runtimeShell}
-${fhsEnv}/bin/swift-env $out/usr/bin/$progName "\$@"
-EOF
-      chmod a+x $out/bin/$progName $out/usr/bin/$progName
-    done
+          cat > $out/bin/$progName <<-EOF
+    #!${runtimeShell}
+    ${fhsEnv}/bin/swift-env $out/usr/bin/$progName "\$@"
+    EOF
+          chmod a+x $out/bin/$progName $out/usr/bin/$progName
+        done
   '' + ''
     mkdir -p $out/nix-support
     substituteAll ${./build/setup-hook.sh} $out/nix-support/setup-hook

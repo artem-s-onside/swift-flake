@@ -36,7 +36,34 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "swift_60_linux": "swift_60_linux",
+        "swift_60_macos": "swift_60_macos"
+      }
+    },
+    "swift_60_linux": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1733907622,
+        "narHash": "sha256-PYdWqjw8qfvj52isemhaihjiGxR0weTdWXVXHD8YL/I=",
+        "type": "tarball",
+        "url": "https://download.swift.org/swift-6.0.3-release/ubi9/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE-ubi9.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://download.swift.org/swift-6.0.3-release/ubi9/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE-ubi9.tar.gz"
+      }
+    },
+    "swift_60_macos": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-H+vhrFUXTow2pOlHAydLF9VqXoFmVXPyq/uF9fguKpU=",
+        "type": "file",
+        "url": "https://download.swift.org/swift-6.0.3-release/xcode/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE-osx.pkg"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://download.swift.org/swift-6.0.3-release/xcode/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE-osx.pkg"
       }
     },
     "systems": {
