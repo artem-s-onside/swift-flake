@@ -20,11 +20,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1738843498,
-        "narHash": "sha256-7x+Q4xgFj9UxZZO9aUDCR8h4vyYut4zPUvfj3i+jBHE=",
+        "lastModified": 1742268799,
+        "narHash": "sha256-IhnK4LhkBlf14/F8THvUy3xi/TxSQkp9hikfDZRD4Ic=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f5a32fa27df91dfc4b762671a0e0a859a8a0058f",
+        "rev": "da044451c6a70518db5b730fe277b70f494188f1",
         "type": "github"
       },
       "original": {
@@ -71,26 +71,26 @@
     "swift_snapshot_linux": {
       "flake": false,
       "locked": {
-        "lastModified": 1738967420,
-        "narHash": "sha256-2PNVjsKLCTU/hphz3pR9uXhDkToYx5lCBCgxgXd1734=",
+        "lastModified": 1741757370,
+        "narHash": "sha256-MRUKGqjl6JXDMrzg7dKLsyjm6gKT2SBvcW3hnc43Yl0=",
         "type": "tarball",
-        "url": "https://download.swift.org/swift-6.1-branch/ubi9/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a-ubi9.tar.gz"
+        "url": "https://download.swift.org/swift-6.1-branch/ubi9/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a-ubi9.tar.gz"
       },
       "original": {
         "type": "tarball",
-        "url": "https://download.swift.org/swift-6.1-branch/ubi9/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a-ubi9.tar.gz"
+        "url": "https://download.swift.org/swift-6.1-branch/ubi9/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a-ubi9.tar.gz"
       }
     },
     "swift_snapshot_macos": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-AUktUVSEJYaJ3NElqo36ecWl1pPKf9OiIMCJTl7EjIc=",
+        "narHash": "sha256-yN+UNbd83+2bQZeaX+myLlrHpt6iGXOzSiHv5icZeeI=",
         "type": "file",
-        "url": "https://download.swift.org/swift-6.1-branch/xcode/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a-osx.pkg"
+        "url": "https://download.swift.org/swift-6.1-branch/xcode/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a-osx.pkg"
       },
       "original": {
         "type": "file",
-        "url": "https://download.swift.org/swift-6.1-branch/xcode/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-02-07-a-osx.pkg"
+        "url": "https://download.swift.org/swift-6.1-branch/xcode/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a-osx.pkg"
       }
     },
     "systems": {

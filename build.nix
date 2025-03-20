@@ -111,6 +111,7 @@ stdenv.mkDerivation (wrapperParams // {
   '' + lib.optionalString stdenv.isLinux ''
         rpath=$rpath''${rpath:+:}$out/usr/lib
         rpath=$rpath''${rpath:+:}$out/usr/lib/swift/host
+        rpath=$rpath''${rpath:+:}$out/usr/lib/swift/host/compiler
         rpath=$rpath''${rpath:+:}$out/usr/lib/swift/linux
         rpath=$rpath''${rpath:+:}${stdenv.cc.cc.lib}/lib
         rpath=$rpath''${rpath:+:}${gcc.cc.lib}/lib
