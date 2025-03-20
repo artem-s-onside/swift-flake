@@ -42,14 +42,14 @@
             if stdenv.hostPlatform.system == "x86_64-linux" then swift_60_linux
             else if stdenv.hostPlatform.system == "aarch64-darwin" then swift_60_macos
             else throw "Unsupproted system: ${stdenv.hostPlatform.system}";
-          version = "6.0.3";
+          version = "6.0.3-RELEASE";
         };
         swift_snapshot = with pkgs; callPackage ./build.nix {
           src =
             if stdenv.hostPlatform.system == "x86_64-linux" then swift_snapshot_linux
             else if stdenv.hostPlatform.system == "aarch64-darwin" then swift_snapshot_macos
             else throw "Unsupproted system: ${stdenv.hostPlatform.system}";
-          version = "6.1-DEVELOPMENT-SNAPSHOT-2025-03-12";
+          version = "6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a";
         };
         derivation = { inherit swift swift_snapshot; };
       in

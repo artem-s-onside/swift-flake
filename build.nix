@@ -74,7 +74,7 @@ stdenv.mkDerivation (wrapperParams // {
 
   unpackPhase = lib.optionalString stdenv.isDarwin ''
     xar -xf $src
-    zcat < swift-${version}-RELEASE-osx-package.pkg/Payload | cpio -i
+    zcat < swift-${version}-osx-package.pkg/Payload | cpio -i
   '';
 
   installPhase = ''
