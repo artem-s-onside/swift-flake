@@ -15,11 +15,11 @@
     };
 
     swift_snapshot_linux = {
-      url = "https://download.swift.org/swift-6.1-branch/ubi9/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a-ubi9.tar.gz";
+      url = "https://download.swift.org/swift-6.1-branch/ubi9/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-20-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-20-a-ubi9.tar.gz";
       flake = false;
     };
     swift_snapshot_macos = {
-      url = "https://download.swift.org/swift-6.1-branch/xcode/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a-osx.pkg";
+      url = "https://download.swift.org/swift-6.1-branch/xcode/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-20-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-20-a-osx.pkg";
       flake = false;
     };
   };
@@ -49,7 +49,7 @@
             if stdenv.hostPlatform.system == "x86_64-linux" then swift_snapshot_linux
             else if stdenv.hostPlatform.system == "aarch64-darwin" then swift_snapshot_macos
             else throw "Unsupproted system: ${stdenv.hostPlatform.system}";
-          version = "6.1-DEVELOPMENT-SNAPSHOT-2025-03-12-a";
+          version = "6.1-DEVELOPMENT-SNAPSHOT-2025-03-20-a";
         };
         derivation = { inherit swift swift_snapshot; };
       in
