@@ -5,21 +5,21 @@
     nixpkgs.url = "nixpkgs/nixos-24.11";
     flake-utils.url = "github:numtide/flake-utils";
 
-    swift_60_linux = {
-      url = "https://download.swift.org/swift-6.0.3-release/ubi9/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE-ubi9.tar.gz";
+    swift_61_linux = {
+      url = "https://download.swift.org/swift-6.1-release/ubi9/swift-6.1-RELEASE/swift-6.1-RELEASE-ubi9.tar.gz";
       flake = false;
     };
-    swift_60_macos = {
-      url = "https://download.swift.org/swift-6.0.3-release/xcode/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE-osx.pkg";
+    swift_61_macos = {
+      url = "https://download.swift.org/swift-6.1-release/xcode/swift-6.1-RELEASE/swift-6.1-RELEASE-osx.pkg";
       flake = false;
     };
 
     swift_snapshot_linux = {
-      url = "https://download.swift.org/swift-6.1-branch/ubi9/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-20-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-20-a-ubi9.tar.gz";
+      url = "https://download.swift.org/development/ubi9/swift-DEVELOPMENT-SNAPSHOT-2025-03-28-a/swift-DEVELOPMENT-SNAPSHOT-2025-03-28-a-ubi9.tar.gz";
       flake = false;
     };
     swift_snapshot_macos = {
-      url = "https://download.swift.org/swift-6.1-branch/xcode/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-20-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-20-a-osx.pkg";
+      url = "https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2025-03-28-a/swift-DEVELOPMENT-SNAPSHOT-2025-03-28-a-osx.pkg";
       flake = false;
     };
   };
@@ -28,8 +28,8 @@
     { self
     , nixpkgs
     , flake-utils
-    , swift_60_linux
-    , swift_60_macos
+    , swift_61_linux
+    , swift_61_macos
     , swift_snapshot_linux
     , swift_snapshot_macos
     }:
@@ -39,10 +39,10 @@
         pkgs = nixpkgs.legacyPackages.${system};
         swift = with pkgs; callPackage ./build.nix {
           src =
-            if stdenv.hostPlatform.system == "x86_64-linux" then swift_60_linux
-            else if stdenv.hostPlatform.system == "aarch64-darwin" then swift_60_macos
+            if stdenv.hostPlatform.system == "x86_64-linux" then swift_61_linux
+            else if stdenv.hostPlatform.system == "aarch64-darwin" then swift_61_macos
             else throw "Unsupproted system: ${stdenv.hostPlatform.system}";
-          version = "6.0.3-RELEASE";
+          version = "6.1-RELEASE";
         };
         swift_snapshot = with pkgs; callPackage ./build.nix {
           src =
