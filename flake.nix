@@ -4,69 +4,83 @@
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-24.11";
     flake-utils.url = "github:numtide/flake-utils";
-
-    swift_61_linux = {
-      url = "https://download.swift.org/swift-6.1-release/ubi9/swift-6.1-RELEASE/swift-6.1-RELEASE-ubi9.tar.gz";
-      flake = false;
-    };
-    swift_61_macos = {
-      url = "https://download.swift.org/swift-6.1-release/xcode/swift-6.1-RELEASE/swift-6.1-RELEASE-osx.pkg";
-      flake = false;
-    };
-
-    swift_snapshot_linux = {
-      url = "https://download.swift.org/development/ubi9/swift-DEVELOPMENT-SNAPSHOT-2025-03-28-a/swift-DEVELOPMENT-SNAPSHOT-2025-03-28-a-ubi9.tar.gz";
-      flake = false;
-    };
-    swift_snapshot_macos = {
-      url = "https://download.swift.org/development/xcode/swift-DEVELOPMENT-SNAPSHOT-2025-03-28-a/swift-DEVELOPMENT-SNAPSHOT-2025-03-28-a-osx.pkg";
-      flake = false;
-    };
   };
 
-  outputs =
-    { self
-    , nixpkgs
-    , flake-utils
-    , swift_61_linux
-    , swift_61_macos
-    , swift_snapshot_linux
-    , swift_snapshot_macos
-    }:
-      with flake-utils.lib; with system; eachSystem [ x86_64-linux aarch64-linux aarch64-darwin ] (system:
-      let
-        sources = (nixpkgs.lib.importJSON ./flake.lock).nodes;
-        pkgs = nixpkgs.legacyPackages.${system};
-        swift = with pkgs; callPackage ./build.nix {
-          src =
-            if stdenv.hostPlatform.system == "x86_64-linux" then swift_61_linux
-            else if stdenv.hostPlatform.system == "aarch64-darwin" then swift_61_macos
-            else throw "Unsupproted system: ${stdenv.hostPlatform.system}";
-          version = "6.1-RELEASE";
-        };
-        swift_snapshot = with pkgs; callPackage ./build.nix {
-          src =
-            if stdenv.hostPlatform.system == "x86_64-linux" then swift_snapshot_linux
-            else if stdenv.hostPlatform.system == "aarch64-darwin" then swift_snapshot_macos
-            else throw "Unsupproted system: ${stdenv.hostPlatform.system}";
-          version = "DEVELOPMENT-SNAPSHOT-2025-03-28-a";
-        };
-        derivation = { inherit swift swift_snapshot; };
-      in
-      rec {
-        packages = derivation // {
-          inherit swift;
-          default = swift;
-        };
-        legacyPackages = pkgs.extend overlay;
-        nixosModules.default = {
-          nixpkgs.overlays = [ overlay ];
-        };
-        overlay = final: prev: derivation;
-        devShell = pkgs.mkShell {
-          name = "env";
-          buildInputs = [ swift ];
-        };
-        formatter = nixpkgs.legacyPackages.${system}.nixpkgs-fmt;
-      });
+  outputs = { self, nixpkgs, flake-utils }:
+    with flake-utils.lib; with system; eachSystem [ x86_64-linux aarch64-linux aarch64-darwin ]
+      (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+
+          sources = with pkgs; {
+            swift_61 = rec {
+              version = "6.1-RELEASE";
+              x86_64-linux = fetchurl {
+                url = "https://download.swift.org/swift-${lib.toLower version}/ubi9/swift-${version}/swift-${version}-ubi9.tar.gz";
+                # sha256 = lib.fakeSha256;
+                hash = "sha256-oHlAFdbpz8DzfbOAht6MUk44oIZEl3NfjQJpnMWYuqM=";
+              };
+              aarch64-darwin = fetchurl {
+                url = "https://download.swift.org/swift-${lib.toLower version}/xcode/swift-${version}/swift-${version}-osx.pkg";
+                # sha256 = lib.fakeSha256;
+                hash = "sha256-pwLRl2xlo85HGKEByzxF8RyW0WEYU2ZsL0XbpSPz0WU=";
+              };
+            };
+
+            swift_snapshot = rec {
+              version = "DEVELOPMENT-SNAPSHOT-2025-04-03-a";
+              x86_64-linux = fetchurl {
+                url = "https://download.swift.org/development/ubi9/swift-${version}/swift-${version}-ubi9.tar.gz";
+                # sha256 = lib.fakeSha256;
+                hash = "sha256-dUFNohTEYopB84p3fMV2/xnLWxGInIMD0nFsiDx0TYY=";
+              };
+              aarch64-darwin = fetchurl {
+                url = "https://download.swift.org/development/xcode/swift-${version}/swift-${version}-osx.pkg";
+                # sha256 = lib.fakeSha256;
+                hash = "sha256-qBoMhhUglsDir9J2/48a84phOOQV01aBItugyvFogoI=";
+              };
+            };
+          };
+
+          swift = with pkgs; callPackage ./build.nix {
+            inherit (sources.swift_61) version;
+            src = sources.swift_61.${system};
+          };
+          swift_snapshot = with pkgs; callPackage ./build.nix {
+            inherit (sources.swift_snapshot) version;
+            src = sources.swift_snapshot.${system};
+          };
+          derivation = { inherit swift swift_snapshot; };
+        in
+        rec {
+          packages = derivation // { default = swift; };
+          legacyPackages = pkgs.extend overlays.default;
+          devShells.default = pkgs.mkShell {
+            name = "env";
+            buildInputs = [ swift ];
+          };
+          checks.hashes = pkgs.runCommand "hashes" { } ''
+            mkdir -p $out
+
+            ${nixpkgs.lib.concatStringsSep "\n" (
+              builtins.concatLists (
+                nixpkgs.lib.mapAttrsToList (swiftName: swiftAttr:
+                  nixpkgs.lib.mapAttrsToList (platform: src:
+                    if builtins.isAttrs src && src ? type && src.type == "derivation"
+                    then "echo '${swiftName}.${platform} hash verified: ${src}' >> $out/success"
+                    else ""
+                  ) swiftAttr
+                ) sources
+              )
+            )}
+          '';
+          formatter = nixpkgs.legacyPackages.${system}.nixpkgs-fmt;
+        }) // {
+      nixosModules.default = {
+        nixpkgs.overlays = [ overlay ];
+      };
+      overlays.default = final: prev: {
+        inherit (self.packages.${prev.system}) swift swift_snapshot;
+      };
+    };
 }
