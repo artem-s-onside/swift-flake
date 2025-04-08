@@ -54,7 +54,6 @@
         in
         rec {
           packages = derivation // { default = swift; };
-          legacyPackages = pkgs.extend overlays.default;
           devShells.default = pkgs.mkShell {
             name = "env";
             buildInputs = [ swift ];
@@ -77,7 +76,7 @@
           formatter = nixpkgs.legacyPackages.${system}.nixpkgs-fmt;
         }) // {
       nixosModules.default = {
-        nixpkgs.overlays = [ overlay ];
+        nixpkgs.overlays = [ overlays.default ];
       };
       overlays.default = final: prev: {
         inherit (self.packages.${prev.system}) swift swift_snapshot;
