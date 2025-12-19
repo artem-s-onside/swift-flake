@@ -79,7 +79,7 @@
         nixpkgs.overlays = [ overlays.default ];
       };
       overlays.default = final: prev: {
-        inherit (self.packages.${prev.system}) swift swift_snapshot;
+        inherit (self.packages.${prev.stdenv.hostPlatform.system}) swift swift_snapshot;
       };
     };
 }
