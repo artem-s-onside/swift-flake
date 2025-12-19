@@ -8,7 +8,7 @@
 with pkgs;
 
 let
-  llvm = llvmPackages_17;
+  llvm = llvmPackages_19;
   clang = llvm.clang;
   stdenv = llvm.stdenv;
 
