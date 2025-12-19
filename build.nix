@@ -121,7 +121,7 @@ stdenv.mkDerivation (wrapperParams // {
         rpath=$rpath''${rpath:+:}${zlib}/lib
         rpath=$rpath''${rpath:+:}${curl.out}/lib
         rpath=$rpath''${rpath:+:}${libxml2.out}/lib
-        rpath=$rpath''${rpath:+:}${python39.out}/lib
+        rpath=$rpath''${rpath:+:}${python310.out}/lib
         rpath=$rpath''${rpath:+:}${libedit}/lib
 
         # set all the dynamic linkers
